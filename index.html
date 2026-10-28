@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZEUS OS // Executive Agent Command</title>
+<style>
+  :root {
+    --bg: #070709; --card: #0C0C12; --deep: #050507; --input: #12121A;
+    --line: #1F1F2A; --line-soft: #2A2A38;
+    --gold: #D4AF37; --gold-dim: rgba(212,175,55,0.3); --gold-faint: rgba(212,175,55,0.2);
+    --cream: #F3E5AB; --muted: #8A8576; --console: #A39878;
+    --emerald: #34d399; --red: #ef4444;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--bg); }
+  body { font-family: var(--sans); color: #E6E4DF; min-height: 100vh; padding: 32px; display: flex; justify-content: center; }
+  .wrap { width: 100%; max-width: 1120px; }
+
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding-bottom: 24px; border-bottom: 1px solid var(--gold-faint); flex-wrap: wrap; }
+  .eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  h1 { font-family: var(--mono); font-size: 24px; font-weight: 700; letter-spacing: 0.08em; color: var(--cream); }
+  .sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .status { text-align: right; }
+  .status-pill { display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px; border: 1px solid var(--gold-dim); border-radius: 999px; background: rgba(212,175,55,0.06); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+  .dot.live { background: var(--gold); animation: pulse 2s ease-in-out infinite; }
+  .dot.down { background: var(--red); }
+  .status-label { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+  .sync { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 8px; letter-spacing: 0.08em; }
+  @keyframes pulse { 0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(212,175,55,0.45);} 50% { opacity: 0.65; box-shadow: 0 0 0 6px rgba(212,175,55,0);} }
+
+  .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 28px 0 20px; }
+  @media (min-width: 900px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+  .stat { background: var(--card); border: 1px solid var(--gold-dim); border-radius: 8px; padding: 20px; }
+  .stat .label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .stat .value { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 600; color: var(--cream); margin-top: 8px; }
+  .stat .value.profit { color: var(--emerald); }
+  .stat .foot { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 6px; letter-spacing: 0.06em; }
+  .stat .foot.warn { color: var(--red); opacity: 0.85; }
+
+  .proj { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; background: var(--card); border: 1px solid var(--gold-faint); border-radius: 8px; padding: 16px 20px; margin-bottom: 28px; }
+  .proj .label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .proj .big { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 600; color: var(--cream); }
+  .proj .basis { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  .console-card { background: var(--card); border: 1px solid var(--gold-faint); border-radius: 8px; padding: 24px; }
+  .console-card h2 { font-size: 16px; font-weight: 600; color: var(--cream); letter-spacing: 0.02em; margin-bottom: 16px; }
+  .input-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .input-row input { flex: 1; min-width: 240px; background: var(--input); border: 1px solid var(--line-soft); border-radius: 4px; padding: 10px 16px; font-size: 13px; font-family: var(--sans); color: #fff; outline: none; }
+  .input-row input::placeholder { color: #55505f; }
+  .input-row input:focus { border-color: var(--gold); }
+  .input-row button { padding: 10px 26px; background: var(--gold); color: #000; font-weight: 600; font-size: 13px; border: none; border-radius: 4px; cursor: pointer; transition: background 0.15s ease, opacity 0.15s ease; }
+  .input-row button:hover:not(:disabled) { background: #c29e2f; }
+  .input-row button:disabled { opacity: 0.5; cursor: default; }
+  :is(input, button):focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  .stream { margin-top: 18px; background: var(--deep); border: 1px solid var(--line); border-radius: 6px; padding: 16px; font-family: var(--mono); font-size: 11px; line-height: 1.75; color: var(--console); min-height: 180px; max-height: 360px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+  .stream .cmd { color: var(--cream); }
+  .stream .dim { color: #5d5748; }
+  .stream .ok { color: var(--emerald); }
+  .stream .err { color: var(--red); opacity: 0.9; }
+  .cursor { display: inline-block; width: 7px; height: 12px; background: var(--gold); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  footer { margin-top: 20px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; color: #3f3b46; text-align: center; }
+
+  @media (prefers-reduced-motion: reduce) { .dot.live, .cursor { animation: none; } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="eyebrow">Zeus OS · Multi-Pillar Architecture</div>
+        <h1>ZEUS OS // EXECUTIVE AGENT COMMAND</h1>
+        <div class="sub">Autonomous Multi-Pillar Architecture</div>
+      </div>
+      <div class="status">
+        <div class="status-pill">
+          <span class="dot" id="statusDot"></span>
+          <span class="status-label" id="statusLabel">Connecting…</span>
+        </div>
+        <div class="sync" id="lastSync">LAST SYNC — —</div>
+      </div>
+    </header>
+
+    <section class="stats" aria-label="Live financials">
+      <div class="stat">
+        <div class="label">Settled Gross Revenue</div>
+        <div class="value" id="mRevenue">—</div>
+        <div class="foot" id="fCount">awaiting first sync</div>
+      </div>
+      <div class="stat">
+        <div class="label">COGS &amp; Expenses</div>
+        <div class="value" id="mCogs">—</div>
+        <div class="foot" id="fCogs">settled entries only</div>
+      </div>
+      <div class="stat">
+        <div class="label">True Net Profit</div>
+        <div class="value profit" id="mProfit">—</div>
+        <div class="foot">revenue − cogs &amp; expenses</div>
+      </div>
+      <div class="stat">
+        <div class="label">Operating Margin</div>
+        <div class="value" id="mMargin">—</div>
+        <div class="foot">net / settled gross</div>
+      </div>
+    </section>
+
+    <section class="proj">
+      <span class="label">Projected Revenue · Next <span id="pHorizon">30</span>d</span>
+      <div style="display:flex; align-items:baseline; gap:12px;">
+        <span class="big" id="pValue">—</span>
+        <span class="basis" id="pBasis">basis: real settled payments only</span>
+      </div>
+    </section>
+
+    <section class="console-card">
+      <h2>Run Integrated Agent Directives</h2>
+      <div class="input-row">
+        <input id="promptInput" type="text" autocomplete="off"
+               placeholder="Enter an operational objective for the autonomous agents…">
+        <button id="execBtn">Execute</button>
+      </div>
+      <div class="stream" id="stream" role="log" aria-live="polite"></div>
+    </section>
+
+    <footer>DATA SOURCE: SQUARE SETTLED PAYMENTS · REAL VALUES ONLY</footer>
+  </div>
+
+<script>
+  const fmtUSD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+  const POLL_MS = 15000;
+  const el = id => document.getElementById(id);
+  const statusDot = el('statusDot'), statusLabel = el('statusLabel'), lastSync = el('lastSync');
+
+  function setStatus(s) {
+    statusDot.className = 'dot' + (s === 'live' ? ' live' : s === 'down' ? ' down' : '');
+    statusLabel.textContent = s === 'live' ? 'Live Ledger Active' : s === 'down' ? 'Ledger Offline' : 'Connecting…';
+  }
+
+  async function fetchFinancials() {
+    try {
+      const res = await fetch('/v1/analytics/live-financials');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const m = await res.json();
+      el('mRevenue').textContent = fmtUSD.format(m.total_settled_revenue_usd);
+      el('mCogs').textContent = fmtUSD.format(m.cogs_and_expenses_usd);
+      el('mProfit').textContent = fmtUSD.format(m.true_net_profit_usd);
+      el('mMargin').textContent = m.operating_profit_margin_pct.toFixed(1) + '%';
+      const fc = el('fCount');
+      fc.textContent = m.settled_payment_count.toLocaleString() + ' settled payments · MTD';
+      fc.classList.remove('warn');
+      const fCx = el('fCogs');
+      if (m.cogs_source === 'square_fees_only') {
+        fCx.textContent = 'Square fees only — COGS provider not wired';
+        fCx.classList.add('warn');
+      } else {
+        fCx.textContent = 'includes wired COGS ledger';
+        fCx.classList.remove('warn');
+      }
+      setStatus('live');
+      lastSync.textContent = 'LAST SYNC ' + m.timestamp_utc.replace('T', ' ').slice(0, 19) + ' UTC';
+    } catch (err) {
+      setStatus('down');
+      console.error('live-financials failed:', err);
+    }
+  }
+
+  async function fetchProjection() {
+    try {
+      const res = await fetch('/v1/analytics/projection?window_days=90&horizon_days=30');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const p = await res.json();
+      el('pHorizon').textContent = p.horizon_days;
+      el('pValue').textContent = fmtUSD.format(p.projected_revenue_usd);
+      el('pBasis').textContent =
+        'basis: trailing ' + p.basis_window_days + 'd settled run-rate (' +
+        fmtUSD.format(p.daily_run_rate_usd) + '/day · ' + p.settled_payment_count.toLocaleString() + ' payments)';
+    } catch (err) {
+      console.error('projection failed:', err);
+    }
+  }
+
+  function tick() {
+    if (!document.hidden) { fetchFinancials(); fetchProjection(); }
+  }
+  tick();
+  setInterval(tick, POLL_MS);
+  document.addEventListener('visibilitychange', tick);
+
+  // ---------- agent console ----------
+  const stream = el('stream'), input = el('promptInput'), btn = el('execBtn');
+  let running = false;
+
+  function line(text, cls) {
+    const div = document.createElement('div');
+    if (cls) div.className = cls;
+    div.textContent = text;
+    stream.appendChild(div);
+    stream.scrollTop = stream.scrollHeight;
+    return div;
+  }
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  async function run() {
+    const task = input.value.trim();
+    if (!task || running) return;
+    running = true;
+    btn.disabled = true;
+    btn.textContent = 'Routing…';
+
+    line('> ' + task, 'cmd');
+    line('Sanitizing context and routing to Gemini 2.5 Flash…', 'dim');
+    try {
+      const res = await fetch('/v1/agent/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task, agent_id: 'executive_controller' }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        line('Execution rejected — HTTP ' + res.status + (data ? ': ' + (data.error || JSON.stringify(data)) : ''), 'err');
+      } else {
+        await sleep(400);
+        line(String(data && data.response || JSON.stringify(data)), data && data.configured === false ? 'err' : 'ok');
+      }
+    } catch (err) {
+      line('Execution Error: ' + err.message, 'err');
+    } finally {
+      const cur = document.createElement('span');
+      cur.className = 'cursor';
+      stream.appendChild(cur);
+      stream.scrollTop = stream.scrollHeight;
+      running = false;
+      btn.disabled = false;
+      btn.textContent = 'Execute';
+    }
+  }
+
+  btn.addEventListener('click', run);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
+
+  line('> Awaiting operational directive…', 'dim');
+  const cur0 = document.createElement('span');
+  cur0.className = 'cursor';
+  stream.appendChild(cur0);
+</script>
+</body>
+</html>
